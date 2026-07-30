@@ -1,0 +1,84 @@
+# Publish the generated marketing site to GitHub Pages.
+#
+# The site is built by the six-node website factory in this repository:
+#   python -m website_factory.run --out dist
+# The build is deterministic and needs no dependencies beyond the standard
+# library, so this workflow installs nothing.
+#
+# One manual step is required before the first deploy, and it is deliberately
+# left to a human because it makes the site publicly visible:
+#   Settings -> Pages -> Build and deployment -> Source: GitHub Actions
+# Until that is set, the build job still runs and uploads the artifact; only
+# the deploy job will fail.
+#
+# There is no pull_request trigger on purpose. Pull requests are covered by
+# python-app.yml, which runs the same build through the test suite. Nothing is
+# published from a branch.
+
+name: Publish website
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "website_factory/**"
+      - "tests/test_website_factory.py"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time, and never cancel one half way through.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the site
+        run: |
+          python -m website_factory.run \
+            --out dist \
+            --base-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+
+      - name: Show what was published
+        run: |
+          ls -la dist
+          echo "--- run report ---"
+          cat runs/*/run-report.json
+
+      - name: Upload the run report and event log
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-factory-run
+          path: runs/
+          retention-days: 30
+
+      - name: Upload the site as a Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
