@@ -1,0 +1,89 @@
+# Drift guard for the generated site.
+#
+# The generator is the source of truth for what gets published, so this workflow
+# runs it and reads the exit code. A spec line nobody rendered, a contrast
+# regression, a page that stopped being reachable or a string that looks like a
+# credential all fail here, on the pull request, instead of failing in public.
+#
+# It also builds the site twice and diffs the result, because a generator that
+# is not reproducible cannot be reviewed: you would never know whether a diff
+# came from the spec or from the run.
+
+name: Site check
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "website_factory/**"
+      - "tests/test_site.py"
+      - "tests/test_website_factory.py"
+      - ".github/workflows/site-check.yml"
+  pull_request:
+    branches: ["**"]
+    paths:
+      - "website_factory/**"
+      - "tests/test_site.py"
+      - "tests/test_website_factory.py"
+      - ".github/workflows/site-check.yml"
+  workflow_dispatch:
+
+# Read-only. This workflow never publishes anything; that is pages.yml, and only
+# from main.
+permissions:
+  contents: read
+
+concurrency:
+  group: site-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    name: Gate the generated site
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Record the interpreter
+        run: python --version
+
+      - name: Grade the site against gate G4b
+        run: python -m website_factory.site --check
+
+      - name: Prove the build is reproducible
+        run: |
+          python -m website_factory.site --check > first.json
+          python -m website_factory.site --check > second.json
+          diff first.json second.json
+
+      - name: Build the site
+        run: python -m website_factory.site --out dist
+
+      - name: List what would be published
+        run: |
+          find dist -type f | sort
+          du -sh dist
+
+      - name: Refuse to publish anything that looks like a credential
+        run: |
+          if grep -rIlE "(BEGIN [A-Z ]*PRIVATE KEY|ghp_[A-Za-z0-9]{20,}|xox[baprs]-)" dist; then
+            echo "::error::a credential-shaped string reached the built site"
+            exit 1
+          fi
+          echo "no credential-shaped strings in dist"
+
+      - name: Upload the built site for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-preview
+          path: dist
+          retention-days: 7
+          if-no-files-found: error

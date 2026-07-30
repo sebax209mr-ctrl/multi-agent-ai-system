@@ -82,3 +82,39 @@ and failure handling, so the whole system can be exported to a visual workflow e
 
 The workflow file lists required credential **names** only. No secret values are stored in this
 repository, and the deployment node is designed so credential values never enter an agent context.
+
+
+## The generated site
+
+The factory above is executable, not a diagram. `python -m website_factory.run`
+walks the six nodes, grades every hand-off, and writes a static site and a run
+report. Nothing in the output is hand-written, which is the point: the site is a
+function of the spec, so reviewing the spec is reviewing the site.
+
+| What | Where |
+| --- | --- |
+| pipeline, node by node | `website_factory/` |
+| the multi-page composition and gate G4b | `website_factory/site.py` |
+| tests for both | `tests/test_website_factory.py`, `tests/test_site.py` |
+| deploy to Pages | `.github/workflows/pages.yml` |
+| drift guard on every pull request | `.github/workflows/site-check.yml` |
+| what to type, what failures mean | `docs/website-factory/RUNBOOK.md` |
+| how the strands in this repo fit together | `docs/PROJECT_MAP.md` |
+
+```bash
+python -m website_factory.run            # six nodes, gates G1 to G5
+python -m website_factory.site --check   # grade the site, write nothing
+python -m website_factory.site --out dist
+python -m http.server --directory dist 8000
+```
+
+There is nothing to install for the build: standard library only, no bundler, no
+framework, no JavaScript in the output.
+
+The site is published by GitHub Actions from `main`, never from a laptop.
+Every pull request builds it twice and diffs the two builds, scans the output for
+credential-shaped strings, and uploads it as the `site-preview` artifact, so a
+change can be opened and read before it is public.
+
+One step stays manual: enabling Pages, in Settings then Pages, with the source set
+to GitHub Actions. Publishing makes the site public, so a person decides it.
