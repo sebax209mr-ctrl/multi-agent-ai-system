@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard - PoolFlow</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="/css/site.css">
+  <script src="/js/api.js" defer></script>
+  <script src="/js/nav.js" defer></script>
+  <script src="/js/dashboard.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="/dashboard">Pool<span>Flow</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/schedule">Schedule</a>
+        <a href="/customers">Customers</a>
+        <a href="/conversations">Conversations</a>
+      </nav>
+      <div class="whoami">
+        <span id="whoami-business"></span>
+        <span id="whoami-name" class="faint"></span>
+        <button id="signout" class="small quiet" type="button">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="wrap stack">
+      <div class="page-head">
+        <h1>Today</h1>
+        <p class="muted">Where the week stands, and anything waiting on you.</p>
+      </div>
+
+      <div id="page-notice" class="hidden"></div>
+
+      <section aria-label="Key numbers">
+        <div class="metrics" id="metrics"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Today's visits</h2>
+          <a class="btn small btn-quiet" href="/schedule">Open schedule</a>
+        </div>
+        <div id="today-list"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Needs you</h2>
+          <a class="btn small btn-quiet" href="/conversations">All conversations</a>
+        </div>
+        <p class="faint">
+          Threads the booking assistant handed over. It stays quiet on these until you reply.
+        </p>
+        <div id="flagged-list"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>This week</h2>
+          <span class="faint" id="week-label"></span>
+        </div>
+        <div class="week" id="week-list"></div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
+
