@@ -303,3 +303,18 @@ footer.site { border-top: 1px solid var(--line); padding: 1.5rem 0; color: var(-
   .visit, .card, button { transition: background-color 120ms ease, border-color 120ms ease; }
 }
 
+/* ------------------------------------------------------- thread list
+ *
+ * These exist as classes rather than inline style attributes because the CSP in
+ * middleware/security.js sets style-src 'self' with no unsafe-inline, so a style=""
+ * attribute written from JavaScript would be blocked by the browser.
+ */
+
+.thread-item { margin-bottom: 0.5rem; }
+.thread-item > button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 0.7rem;
+}
+.thread-item > button .spread { width: 100%; }
