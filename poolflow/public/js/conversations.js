@@ -5,6 +5,9 @@
  * The agent is allowed to give up. What it is not allowed to do is give up quietly, so
  * every escalation lands here with the full transcript and a reply box. Replying resolves
  * the escalation server-side: the thread reopens and the agent's turn budget resets.
+ *
+ * Note there are no style attributes anywhere below. The CSP sets style-src 'self' with no
+ * unsafe-inline, so anything visual has to be a class in site.css.
  */
 
 (function () {
@@ -17,11 +20,7 @@
   var selectedId = new URLSearchParams(window.location.search).get('id');
 
   function summaryLine(row) {
-    var button = PF.el('button', {
-      class: 'quiet',
-      type: 'button',
-      style: 'display:block;width:100%;text-align:left;',
-    }, [
+    var button = PF.el('button', { class: 'quiet', type: 'button' }, [
       PF.el('div', { class: 'spread' }, [
         PF.el('strong', { text: row.customer_name || row.customer_phone }),
         PF.badge(row.status),
@@ -30,7 +29,7 @@
     ]);
 
     button.addEventListener('click', function () { select(row.id); });
-    return PF.el('div', { style: 'margin-bottom:0.5rem;' }, [button]);
+    return PF.el('div', { class: 'thread-item' }, [button]);
   }
 
   async function loadList() {
@@ -66,11 +65,11 @@
   function replyBox(conversation) {
     var form = PF.el('form', { id: 'reply-form' });
     var textarea = PF.el('textarea', {
+      id: 'reply-body',
       name: 'body',
       maxlength: '480',
       required: 'required',
-      placeholder: 'Reply as the owner. This goes out as an SMS.',
-      'aria-label': 'Reply message',
+      placeholder: 'Reply as the owner. This goes out as a text message.',
     });
     var send = PF.el('button', { type: 'submit', text: 'Send reply' });
     var notice = PF.el('div', { class: 'hidden' });
@@ -79,7 +78,6 @@
       PF.el('label', { for: 'reply-body', text: 'Your reply' }),
       textarea,
     ]));
-    textarea.id = 'reply-body';
     form.appendChild(PF.el('div', { class: 'row' }, [send]));
     form.appendChild(notice);
 
@@ -145,7 +143,10 @@
       detailBox.appendChild(PF.el('div', { class: 'card-head' }, [
         PF.el('div', null, [
           PF.el('h2', { text: conversation.customer_name || conversation.customer_phone }),
-          PF.el('div', { class: 'faint', text: conversation.customer_phone + ' - intent: ' + conversation.intent }),
+          PF.el('div', {
+            class: 'faint',
+            text: conversation.customer_phone + ' - intent: ' + conversation.intent,
+          }),
         ]),
         PF.el('div', { class: 'row' }, [PF.badge(conversation.status), closeButton(conversation)]),
       ]));
@@ -153,14 +154,16 @@
       if (conversation.status === 'needs_human') {
         detailBox.appendChild(PF.el('div', { class: 'notice notice-error' }, [
           'The assistant handed this over after ' + conversation.turn_count +
-          ' turns. It will stay quiet until you reply.',
+          ' turns. It stays quiet until you reply.',
         ]));
       }
 
-      var thread_el = PF.el('div', { class: 'thread' });
-      thread.messages.forEach(function (message) { thread_el.appendChild(messageBubble(message)); });
-      detailBox.appendChild(thread_el);
-      thread_el.scrollTop = thread_el.scrollHeight;
+      var transcript = PF.el('div', { class: 'thread' });
+      thread.messages.forEach(function (message) {
+        transcript.appendChild(messageBubble(message));
+      });
+      detailBox.appendChild(transcript);
+      transcript.scrollTop = transcript.scrollHeight;
 
       detailBox.appendChild(replyBox(conversation));
     } catch (err) {
@@ -182,4 +185,3 @@
     })
     .catch(function () { /* nav.js already reported it */ });
 })();
-
