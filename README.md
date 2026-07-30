@@ -56,3 +56,29 @@ This project is shared with collaborators. Please open a pull request with a cle
 ## License
 
 This project is licensed under the MIT License, see the `LICENSE` file for details.
+
+
+## Website Generation & Deployment Factory (node-based architecture)
+
+A concrete six-node pipeline built on top of this orchestrator pattern. It takes a seed topic and
+produces a deployed website, a GitHub repository, and a full decision trail. Each agent is defined
+as a standalone **Node** with an explicit input contract, internal logic, output contract, tools,
+and failure handling, so the whole system can be exported to a visual workflow engine.
+
+`seed -> idea.brief -> product.spec -> design.system -> code.bundle -> deployment.record -> run.report`
+
+| # | Node | Emits | Spec |
+|---|------|-------|------|
+| 1 | Idea Generator | `idea.brief` | [docs/website-factory/nodes/01-idea-generator.md](docs/website-factory/nodes/01-idea-generator.md) |
+| 2 | Product Manager | `product.spec` | [docs/website-factory/nodes/02-product-manager.md](docs/website-factory/nodes/02-product-manager.md) |
+| 3 | UI/UX Designer | `design.system` | [docs/website-factory/nodes/03-uiux-designer.md](docs/website-factory/nodes/03-uiux-designer.md) |
+| 4 | Software Engineer | `code.bundle` | [docs/website-factory/nodes/04-software-engineer.md](docs/website-factory/nodes/04-software-engineer.md) |
+| 5 | IT & Deployment | `deployment.record` | [docs/website-factory/nodes/05-it-deployment.md](docs/website-factory/nodes/05-it-deployment.md) |
+| 6 | Lead Manager (Orchestrator) | `run.report` | [docs/website-factory/nodes/06-lead-manager-orchestrator.md](docs/website-factory/nodes/06-lead-manager-orchestrator.md) |
+
+- Start here: [docs/website-factory/README.md](docs/website-factory/README.md)
+- System design: [docs/website-factory/ARCHITECTURE.md](docs/website-factory/ARCHITECTURE.md)
+- Importable workflow graph: [workflows/website-factory.workflow.json](workflows/website-factory.workflow.json)
+
+The workflow file lists required credential **names** only. No secret values are stored in this
+repository, and the deployment node is designed so credential values never enter an agent context.
