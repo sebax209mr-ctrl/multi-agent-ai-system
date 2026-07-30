@@ -6,4 +6,5 @@ agents:
 - {name: researcher, role: "Gathers information and context needed to complete a task", model: gpt-4o-mini, tools: [web_search, document_reader]}
 - {name: coder, role: "Writes, reviews, and edits code based on the task requirements", model: gpt-4o-mini, tools: [code_interpreter, file_editor]}
 - {name: reviewer, role: "Reviews outputs from other agents for quality and correctness", model: gpt-4o-mini, tools: [code_interpreter]}
+- {name: schedule_reader, role: "Reads applicant availability and extracts structured schedule data", model: gpt-4o-mini, tools: [file_reader]}
 communication: {protocol: message_passing, shared_memory: true, max_message_length: 4000}
