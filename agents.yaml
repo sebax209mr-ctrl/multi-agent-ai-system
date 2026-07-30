@@ -1,10 +1,53 @@
 # agents.yaml
 # Declarative configuration for the multi-agent system.
 # Add or edit agents here without changing the orchestration code.
-orchestrator: {name: orchestrator, role: "Coordinates tasks and delegates work to specialized worker agents", model: gpt-4o-mini, max_iterations: 10}
+#
+# Keys understood by agents/registry.py and agents/orchestrator.py:
+#   name        unique id; also the key its result is stored under on the blackboard
+#   type        which class to build (see agents/registry.py).
+#               Defaults to name, then to the generic WorkerAgent.
+#   role        natural language description, used in prompts
+#   model       model id passed to the agent
+#   tools       tool names the agent is allowed to use
+#   depends_on  agents that must run first; used to topologically sort the run
+#   options     free-form per-agent settings (file paths, thresholds, ...)
+#   enabled     set to false to skip the agent entirely
+
+orchestrator:
+  name: orchestrator
+  role: Coordinates tasks and delegates work to specialized worker agents
+  model: gpt-4o-mini
+  max_iterations: 10
+
 agents:
-- {name: researcher, role: "Gathers information and context needed to complete a task", model: gpt-4o-mini, tools: [web_search, document_reader]}
-- {name: coder, role: "Writes, reviews, and edits code based on the task requirements", model: gpt-4o-mini, tools: [code_interpreter, file_editor]}
-- {name: reviewer, role: "Reviews outputs from other agents for quality and correctness", model: gpt-4o-mini, tools: [code_interpreter]}
-- {name: schedule_reader, role: "Reads applicant availability and extracts structured schedule data", model: gpt-4o-mini, tools: [file_reader]}
-communication: {protocol: message_passing, shared_memory: true, max_message_length: 4000}
+  - name: schedule_reader
+    type: schedule_reader
+    role: Reads applicant availability and extracts structured schedule data
+    model: gpt-4o-mini
+    tools: [file_reader]
+    depends_on: []
+    options:
+      path: data/applicants.csv
+
+  - name: researcher
+    role: Gathers information and context needed to complete a task
+    model: gpt-4o-mini
+    tools: [web_search, document_reader]
+    depends_on: []
+
+  - name: coder
+    role: Writes, reviews, and edits code based on the task requirements
+    model: gpt-4o-mini
+    tools: [code_interpreter, file_editor]
+    depends_on: [researcher]
+
+  - name: reviewer
+    role: Reviews outputs from other agents for quality and correctness
+    model: gpt-4o-mini
+    tools: [code_interpreter]
+    depends_on: [coder, schedule_reader]
+
+communication:
+  protocol: message_passing
+  shared_memory: true
+  max_message_length: 4000
