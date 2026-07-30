@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conversations - PoolFlow</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="/css/site.css">
+  <script src="/js/api.js" defer></script>
+  <script src="/js/nav.js" defer></script>
+  <script src="/js/conversations.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="/dashboard">Pool<span>Flow</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/schedule">Schedule</a>
+        <a href="/customers">Customers</a>
+        <a href="/conversations">Conversations</a>
+      </nav>
+      <div class="whoami">
+        <span id="whoami-business"></span>
+        <span id="whoami-name" class="faint"></span>
+        <button id="signout" class="small quiet" type="button">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="wrap stack">
+      <div class="page-head">
+        <h1>Conversations</h1>
+        <p class="muted">
+          Text threads with leads and customers. The assistant handles what it can and hands
+          the rest to you.
+        </p>
+      </div>
+
+      <div id="page-notice" class="hidden"></div>
+
+      <div class="scope">
+        <section class="card">
+          <div class="card-head">
+            <h2>Threads</h2>
+          </div>
+          <div class="field">
+            <label for="thread-filter">Show</label>
+            <select id="thread-filter">
+              <option value="">everything</option>
+              <option value="needs_human">needs you</option>
+              <option value="open">open</option>
+              <option value="booked">booked</option>
+              <option value="closed">closed</option>
+            </select>
+          </div>
+          <div id="thread-list"></div>
+        </section>
+
+        <section class="card" id="thread-detail" aria-live="polite"></section>
+
+        <section class="card" id="thread-empty">
+          <div class="empty-state">Pick a thread to read it.</div>
+        </section>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
+
