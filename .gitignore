@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Website factory run logs and reports (regenerated on every run, uploaded as a
+# CI artifact instead of being committed). The site output directory is already
+# covered by dist/ above.
+runs/
