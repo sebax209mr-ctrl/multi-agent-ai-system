@@ -77,9 +77,7 @@ def _local_nav(current: str) -> List[str]:
     return out
 
 
-def stories_html(
-    spec: Dict[str, Any], canonical: str, version: str = "1.0.0"
-) -> str:
+def stories_html(spec: Dict[str, Any], canonical: str, version: str = "1.0.0") -> str:
     """The commitments page: one card per story, criteria as a list."""
     require(spec, ("product_name", "stories"), "software_engineer")
     heading = "What we are building"
@@ -93,12 +91,7 @@ def stories_html(
     out.append("<body>")
     out.extend(_topbar(spec, with_nav=False))
     out.append('<main id="main">')
-    out.extend(
-        [
-            '<section class="hero">',
-            '<div class="wrap">',
-        ]
-    )
+    out.extend(['<section class="hero">', '<div class="wrap">'])
     out.extend(_local_nav("stories.html"))
     out.extend(
         [
@@ -143,7 +136,7 @@ def stories_html(
     out.append("</main>")
     out.extend(_footer(spec))
     out.extend(["</body>", "</html>"])
-    return "\\n".join(out) + "\\n"
+    return "\n".join(out) + "\n"
 
 
 def scope_html(spec: Dict[str, Any], canonical: str, version: str = "1.0.0") -> str:
@@ -202,7 +195,7 @@ def scope_html(spec: Dict[str, Any], canonical: str, version: str = "1.0.0") -> 
     out.extend(["</div>", "</section>", "</main>"])
     out.extend(_footer(spec))
     out.extend(["</body>", "</html>"])
-    return "\\n".join(out) + "\\n"
+    return "\n".join(out) + "\n"
 
 
 BUILDERS = {"stories.html": stories_html, "scope.html": scope_html}
@@ -222,9 +215,8 @@ def build_pages(
 def _inject_nav(document: str, links: Sequence[Tuple[str, str]]) -> str:
     """Add page links to the index nav without re-templating the index.
 
-    Only the first </nav> is touched, and only once, so the injection is
-    idempotent in effect and easy to assert on: the index still has exactly one
-    nav when this returns.
+    Only the first </nav> is touched, and only once, so the result is easy to
+    assert on: the index still has exactly one nav when this returns.
     """
     if "</nav>" not in document:
         return document
@@ -251,14 +243,14 @@ def sitemap_xml(base_url: str, routes: Sequence[str]) -> str:
             ]
         )
     lines.append("</urlset>")
-    return "\\n".join(lines) + "\\n"
+    return "\n".join(lines) + "\n"
 
 
 def extend_bundle(bundle: Dict[str, Any], spec: Dict[str, Any]) -> Dict[str, Any]:
     """code.bundle -> code.bundle, with the extra pages folded in.
 
-    The input bundle is not mutated. Same shape out as in, so anything that
-    already accepts a code.bundle keeps working on the result.
+    The input bundle is not mutated, and the shape out is the shape in, so
+    anything that already accepts a code.bundle keeps working on the result.
     """
     require(bundle, SITE_CONTRACT, "software_engineer")
     base = bundle["base_url"]
@@ -287,7 +279,7 @@ def grade_site(site: Dict[str, Any], spec: Dict[str, Any]) -> Quality:
 
     Traceability is the interesting one. It asks whether every story id and
     every out-of-scope line actually reached the HTML, which is the check that
-    catches a spec change that nobody rendered.
+    catches a spec change nobody rendered.
     """
     require(site, SITE_CONTRACT, "software_engineer")
     files: Dict[str, str] = site["files"]
@@ -347,7 +339,7 @@ def grade_site(site: Dict[str, Any], spec: Dict[str, Any]) -> Quality:
 def compose(
     base_url: str = DEFAULT_BASE_URL, version: str = "1.0.0"
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    """seed -> brief -> spec -> design -> bundle -> site. Pure, and reproducible.
+    """seed -> brief -> spec -> design -> bundle -> site. Pure and reproducible.
 
     Returns the spec alongside the site because every gate downstream needs the
     spec to grade against. Nothing here touches the network or the filesystem.
@@ -368,12 +360,12 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--out",
         default=None,
-        help="write the site to this directory (only if the gate passes)",
+        help="write the site to this directory, only if the gate passes",
     )
     parser.add_argument(
         "--check",
         action="store_true",
-        help="grade only, write nothing; this is what CI runs",
+        help="grade only and write nothing; this is what CI runs",
     )
     return parser
 
