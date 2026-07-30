@@ -8,8 +8,11 @@ name: Python application
 on:
   push:
     branches: [ "main" ]
+  # Run on every pull request, whatever it targets. Restricting this to "main"
+  # meant stacked pull requests (one feature branch based on another) silently
+  # got no CI at all.
   pull_request:
-    branches: [ "main" ]
+    branches: [ "**" ]
 
 permissions:
   contents: read
