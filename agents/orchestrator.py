@@ -27,8 +27,14 @@ class Orchestrator:
 
     def __init__(self, config: Dict[str, Any]):
         self.config = config
+        from agents.schedule_reader import ScheduleReaderAgent
         self.workers: List[WorkerAgent] = [
-            WorkerAgent(
+            ScheduleReaderAgent(
+                name=agent_cfg["name"],
+                role=agent_cfg["role"],
+                model=agent_cfg.get("model", "gpt-4o-mini"),
+                tools=agent_cfg.get("tools", []),
+            ) if agent_cfg["name"] == "schedule_reader" else WorkerAgent(
                 name=agent_cfg["name"],
                 role=agent_cfg["role"],
                 model=agent_cfg.get("model", "gpt-4o-mini"),
