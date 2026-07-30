@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PoolFlow - scheduling and SMS booking for pool service companies</title>
+  <meta name="description" content="PoolFlow keeps a pool service company's customers, weekly schedule and text-message bookings in one place. Responsive web, no app to install.">
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="/">Pool<span>Flow</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="/">Home</a>
+      </nav>
+      <a class="btn small" href="/login">Sign in</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="wrap">
+        <h1>Your week, your customers, and the texts that fill your calendar.</h1>
+        <p class="lede">
+          PoolFlow is a scheduling tool for pool service companies. Keep your customer list,
+          run your week, and let an assistant answer the business line and book real open
+          slots over text message.
+        </p>
+        <p class="row">
+          <a class="btn" href="/login">Sign in</a>
+          <a class="btn btn-quiet" href="#how">How the booking assistant works</a>
+        </p>
+        <p class="faint">
+          Works in any phone or laptop browser. Nothing to install.
+        </p>
+      </div>
+    </section>
+
+    <div class="wrap">
+      <section class="features">
+        <div class="card">
+          <h2>One list of people</h2>
+          <p class="muted">
+            Leads and customers live in the same list, and the status is the funnel: lead,
+            active, paused, lost. When someone books, they stop being a lead automatically.
+          </p>
+        </div>
+        <div class="card">
+          <h2>A week you can actually read</h2>
+          <p class="muted">
+            Seven columns, every visit in place. Mark a stop done or a no-show with one tap
+            while you are still standing at the gate.
+          </p>
+        </div>
+        <div class="card">
+          <h2>Texts that turn into jobs</h2>
+          <p class="muted">
+            A lead texts your business number. The assistant checks your real openings,
+            offers one or two, and books the one they confirm.
+          </p>
+        </div>
+      </section>
+
+      <section class="card" id="how">
+        <h2>How the booking assistant works</h2>
+        <p class="muted">
+          It is narrow on purpose. The assistant never decides what "available" means and it
+          cannot write to your calendar with free text.
+        </p>
+        <ol class="muted">
+          <li>Someone texts your business number. If we do not recognise the number, they are saved as a new lead before anything else happens.</li>
+          <li>The server works out your genuinely open slots for the next seven days from your working hours and the visits already booked.</li>
+          <li>The assistant is handed that list and may only offer times from it. It offers one or two, never a wall of options.</li>
+          <li>Nothing is booked until the customer confirms a specific time, and the booking happens through a structured function call that is re-checked against your calendar as it is written.</li>
+          <li>If the conversation goes about four turns without getting anywhere, or touches pricing, or the customer asks for a person, it stops and flags the thread for you.</li>
+        </ol>
+      </section>
+
+      <section class="scope">
+        <div class="card">
+          <h2>In this version</h2>
+          <ul>
+            <li>Customer and lead records, kept by hand or created by an inbound text</li>
+            <li>Week-view scheduling, with completed and no-show outcomes</li>
+            <li>Day-before reminder texts</li>
+            <li>Two-way SMS booking with a hand-off to you when it stalls</li>
+            <li>A dashboard: this week's jobs, open leads, active customers</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h2>Not in this version</h2>
+          <ul>
+            <li>Payments and invoicing</li>
+            <li>Route optimisation and GPS</li>
+            <li>Two-way calendar sync</li>
+            <li>Property management and construction wording</li>
+            <li>A native mobile app</li>
+            <li>Hiring and resume tools</li>
+          </ul>
+          <p class="faint">
+            Left out deliberately, until a real operator asks for them.
+          </p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site">
+    <div class="wrap">
+      <p>PoolFlow - pool service MVP. <a href="/login">Sign in</a></p>
+    </div>
+  </footer>
+</body>
+</html>
+
