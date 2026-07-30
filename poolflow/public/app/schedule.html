@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Schedule - PoolFlow</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="/css/site.css">
+  <script src="/js/api.js" defer></script>
+  <script src="/js/nav.js" defer></script>
+  <script src="/js/schedule.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="/dashboard">Pool<span>Flow</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/schedule">Schedule</a>
+        <a href="/customers">Customers</a>
+        <a href="/conversations">Conversations</a>
+      </nav>
+      <div class="whoami">
+        <span id="whoami-business"></span>
+        <span id="whoami-name" class="faint"></span>
+        <button id="signout" class="small quiet" type="button">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="wrap stack">
+      <div class="page-head">
+        <h1>Schedule</h1>
+        <p class="muted">Mark visits done or missed as you go. Book new ones below.</p>
+      </div>
+
+      <div id="page-notice" class="hidden"></div>
+
+      <section class="card">
+        <div class="card-head">
+          <h2 id="week-label">Loading week...</h2>
+          <div class="row">
+            <button id="week-prev" class="small quiet" type="button">Previous</button>
+            <button id="week-today" class="small quiet" type="button">This week</button>
+            <button id="week-next" class="small quiet" type="button">Next</button>
+          </div>
+        </div>
+        <div class="week" id="week-grid"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Book a visit</h2>
+        </div>
+        <p class="faint">
+          Only genuinely open times appear here - the same list the SMS assistant is allowed
+          to offer. Booking a lead's first visit makes them an active customer.
+        </p>
+
+        <div id="book-notice" class="hidden"></div>
+
+        <form id="book-form" novalidate>
+          <div class="grid-2">
+            <div class="field">
+              <label for="customer_id">Customer</label>
+              <select id="customer_id" name="customer_id" required>
+                <option value="">Loading customers...</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="starts_at">Time</label>
+              <select id="starts_at" name="starts_at" required>
+                <option value="">Loading open slots...</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="service_type">Type of visit</label>
+              <select id="service_type" name="service_type">
+                <option value="maintenance">maintenance</option>
+                <option value="cleaning">cleaning</option>
+                <option value="repair">repair</option>
+                <option value="inspection">inspection</option>
+                <option value="other">other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="job-notes">Notes for the tech</label>
+              <input id="job-notes" name="notes" type="text" maxlength="2000">
+            </div>
+          </div>
+          <button id="book-submit" type="submit">Book it</button>
+        </form>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
+
