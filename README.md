@@ -16,7 +16,7 @@ This repo is intended to be shared and extended by a team, so it includes config
 │   ├── base_agent.py        # Shared base class for all agents
 │   └── orchestrator.py      # Orchestrator agent that delegates to workers
 └── docs/
-    └── ARCHITECTURE.md       # System design and agent communication overview
+    └── ARCHITECTURE.md      # System design and agent communication overview
 ```
 
 ## Getting Started
@@ -55,7 +55,7 @@ This project is shared with collaborators. Please open a pull request with a cle
 
 ## License
 
-This project is licensed under the MIT License, see the `LICENSE` file for details.
+This project is licensed under the MIT License. see the `LICENSE` file for details.
 
 
 ## Website Generation & Deployment Factory (node-based architecture)
