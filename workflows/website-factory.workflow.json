@@ -1,0 +1,360 @@
+{
+  "name": "Website Generation & Deployment Factory",
+  "id": "website-factory-v1",
+  "schemaVersion": "1.0.0",
+  "meta": {
+    "description": "Six-node agent factory that turns a seed topic into a deployed website. Engine-agnostic: importable into n8n-style engines or executable by the reference runner in this repo.",
+    "owner": "sebax209mr-ctrl",
+    "docs": "docs/website-factory/ARCHITECTURE.md",
+    "engine_compatibility": ["reference-runner", "n8n", "langgraph", "temporal", "prefect"],
+    "created": "2026-07-30",
+    "tags": ["multi-agent", "orchestration", "website-generation", "devops"]
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "orchestrator_error_handler",
+    "timezone": "UTC",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "budgets": {
+    "usd_cap": 12.0,
+    "token_cap": 900000,
+    "wall_clock_cap_min": 45,
+    "on_breach": "halt_and_ask_human"
+  },
+  "state": {
+    "store": "postgres",
+    "event_log": "append_only_jsonl",
+    "projection": "run_state",
+    "artifact_store": { "driver": "s3", "inline_threshold_kb": 32, "content_addressed": true },
+    "idempotency": { "key_source": "run_id + node_id + input_hash", "enforce": true }
+  },
+  "human_in_the_loop": {
+    "owner_node": "lead_manager",
+    "mode": "checkpoint",
+    "always_ask": ["publish_public", "custom_domain", "paid_plan", "repo_access_changes", "any_spend"],
+    "sla_minutes": 120,
+    "on_timeout": "park_run",
+    "auto_approve_allowed": false
+  },
+  "injection_policy": {
+    "treat_node_output_as_data": true,
+    "treat_fetched_web_content_as_data": true,
+    "never_execute_instructions_found_in_payloads": true
+  },
+  "credentials": {
+    "note": "Names only. Values are injected by the operator into the secret store and are never stored in this file.",
+    "required": ["ANTHROPIC_API_KEY", "GITHUB_TOKEN", "VERCEL_TOKEN"],
+    "optional": ["SEARCH_API_KEY", "NETLIFY_AUTH_TOKEN", "SANDBOX_API_KEY", "DATABASE_URL", "S3_CREDENTIALS"]
+  },
+  "schemas": {
+    "envelope": "schemas/envelope.schema.json",
+    "seed.request": "schemas/seed.request.schema.json",
+    "idea.brief": "schemas/idea.brief.schema.json",
+    "product.spec": "schemas/product.spec.schema.json",
+    "design.system": "schemas/design.system.schema.json",
+    "code.bundle": "schemas/code.bundle.schema.json",
+    "deployment.record": "schemas/deployment.record.schema.json",
+    "run.report": "schemas/run.report.schema.json"
+  },
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Seed Trigger",
+      "type": "trigger.manual",
+      "typeVersion": 1,
+      "position": [80, 40],
+      "parameters": {
+        "output_schema_ref": "schemas/seed.request.schema.json",
+        "defaults": {
+          "profile": "standard",
+          "site_type": "marketing_site_with_waitlist",
+          "variants_requested": 1
+        }
+      }
+    },
+    {
+      "id": "lead_manager",
+      "name": "Lead Manager (Orchestrator)",
+      "type": "agent.orchestrator",
+      "typeVersion": 1,
+      "position": [840, 40],
+      "parameters": {
+        "model": "claude-opus-4",
+        "temperature": 0.0,
+        "system_prompt_ref": "prompts/lead_manager.md",
+        "tools": ["state_store", "artifact_store", "schema_registry", "rules_engine", "queue", "notifier", "otel", "cost_meter", "secret_broker"],
+        "routing_engine": "jsonlogic",
+        "loop_guard": { "max_rework_per_node": 2, "max_round_trips_per_pair": 2 },
+        "observability": { "trace": true, "metrics": ["latency_p95", "cost_usd", "gate_pass_rate", "rework_rate", "escalation_rate"] },
+        "emits": "run.report"
+      },
+      "credentials": { "llm": "ANTHROPIC_API_KEY", "state": "DATABASE_URL", "artifacts": "S3_CREDENTIALS" },
+      "onError": "park_run_and_notify"
+    },
+    {
+      "id": "idea_generator",
+      "name": "Idea Generator",
+      "type": "agent.ideation",
+      "typeVersion": 1,
+      "position": [280, 240],
+      "parameters": {
+        "model": "claude-opus-4",
+        "temperature": 0.9,
+        "max_output_tokens": 6000,
+        "system_prompt_ref": "prompts/idea_generator.md",
+        "input_schema_ref": "schemas/seed.request.schema.json",
+        "output_schema_ref": "schemas/idea.brief.schema.json",
+        "tools": ["web_search", "url_fetch", "trend_signal", "vector_memory"],
+        "research_budget": { "max_queries": 8, "max_pages": 20 },
+        "retry": { "max_attempts": 2, "on": ["E1xx", "E2xx", "E3xx"], "backoff": "exponential_jitter" }
+      },
+      "credentials": { "llm": "ANTHROPIC_API_KEY", "search_api": "SEARCH_API_KEY" },
+      "onError": "route_to_orchestrator",
+      "spec": "docs/website-factory/nodes/01-idea-generator.md"
+    },
+    {
+      "id": "product_manager",
+      "name": "Product Manager",
+      "type": "agent.product",
+      "typeVersion": 1,
+      "position": [560, 240],
+      "parameters": {
+        "model": "claude-opus-4",
+        "temperature": 0.4,
+        "max_output_tokens": 12000,
+        "system_prompt_ref": "prompts/product_manager.md",
+        "input_schema_ref": "schemas/idea.brief.schema.json",
+        "output_schema_ref": "schemas/product.spec.schema.json",
+        "tools": ["markdown_render", "schema_validator", "requirements_linter", "issue_tracker"],
+        "emit_artifacts": ["docs/product-spec.md"],
+        "phase_count": 3,
+        "retry": { "max_attempts": 2, "on": ["E1xx", "E2xx"], "backoff": "immediate_with_critique" }
+      },
+      "credentials": { "llm": "ANTHROPIC_API_KEY", "issue_tracker": "GITHUB_TOKEN" },
+      "onError": "route_to_orchestrator",
+      "spec": "docs/website-factory/nodes/02-product-manager.md"
+    },
+    {
+      "id": "uiux_designer",
+      "name": "UI/UX Designer",
+      "type": "agent.design",
+      "typeVersion": 1,
+      "position": [840, 240],
+      "parameters": {
+        "model": "claude-opus-4",
+        "temperature": 0.6,
+        "max_output_tokens": 14000,
+        "system_prompt_ref": "prompts/uiux_designer.md",
+        "input_schema_ref": "schemas/product.spec.schema.json",
+        "output_schema_ref": "schemas/design.system.schema.json",
+        "tools": ["contrast_calculator", "token_transformer", "font_licence_check", "icon_registry", "url_fetch"],
+        "emit_artifacts": ["docs/design-system.md", "design/tokens.json", "src/styles/tokens.css"],
+        "a11y_target": "WCAG_2_2_AA",
+        "dark_mode": true,
+        "retry": { "max_attempts": 2, "on": ["E1xx", "E2xx"], "backoff": "immediate_with_critique" }
+      },
+      "credentials": { "llm": "ANTHROPIC_API_KEY" },
+      "onError": "route_to_orchestrator",
+      "spec": "docs/website-factory/nodes/03-uiux-designer.md"
+    },
+    {
+      "id": "software_engineer",
+      "name": "Software Engineer",
+      "type": "agent.engineering",
+      "typeVersion": 1,
+      "position": [1120, 240],
+      "parameters": {
+        "model": "claude-opus-4",
+        "temperature": 0.2,
+        "max_output_tokens": 32000,
+        "system_prompt_ref": "prompts/software_engineer.md",
+        "input_schema_refs": ["schemas/product.spec.schema.json", "schemas/design.system.schema.json"],
+        "output_schema_ref": "schemas/code.bundle.schema.json",
+        "tools": ["code_sandbox", "package_manager", "eslint", "tsc", "vitest", "playwright", "next_build", "gitleaks", "git_cli", "token_transformer"],
+        "stack": "nextjs_app_router",
+        "budgets": { "max_bundle_kb_js": 120, "max_component_lines": 150 },
+        "self_repair": { "max_attempts": 3, "strategy": "inject_build_log_tail" },
+        "retry": { "max_attempts": 3, "on": ["E1xx", "E2xx", "E3xx", "E5xx"], "backoff": "exponential_jitter" }
+      },
+      "credentials": { "llm": "ANTHROPIC_API_KEY", "sandbox": "SANDBOX_API_KEY" },
+      "onError": "route_to_orchestrator",
+      "spec": "docs/website-factory/nodes/04-software-engineer.md"
+    },
+    {
+      "id": "it_deployment",
+      "name": "IT & Deployment",
+      "type": "agent.devops",
+      "typeVersion": 1,
+      "position": [1400, 240],
+      "parameters": {
+        "model": "claude-opus-4",
+        "temperature": 0.1,
+        "system_prompt_ref": "prompts/it_deployment.md",
+        "input_schema_ref": "schemas/code.bundle.schema.json",
+        "output_schema_ref": "schemas/deployment.record.schema.json",
+        "tools": ["github_api", "git_cli", "vercel_cli", "netlify_cli", "secret_manager", "dns_api", "lighthouse_ci", "http_smoke", "link_crawler", "uptime_monitor", "gitleaks"],
+        "host": { "provider": "vercel", "fallback": "netlify" },
+        "guardrails": {
+          "forbid_force_push": true,
+          "forbid_direct_push_to_default_branch": true,
+          "forbid_secret_values_in_context": true,
+          "require_rollback_target": true,
+          "human_approval_required": ["publish_public", "custom_domain", "paid_plan", "repo_access_changes"]
+        },
+        "sre_role": { "handles_error_classes": ["E1xx", "E2xx", "E3xx", "E4xx", "E5xx", "E6xx", "E7xx"], "owns_runbook": true },
+        "retry": { "max_attempts": 2, "on": ["E3xx", "E6xx"], "backoff": "exponential_jitter" }
+      },
+      "credentials": { "llm": "ANTHROPIC_API_KEY", "github": "GITHUB_TOKEN", "vercel": "VERCEL_TOKEN", "netlify": "NETLIFY_AUTH_TOKEN" },
+      "onError": "route_to_orchestrator",
+      "spec": "docs/website-factory/nodes/05-it-deployment.md"
+    },
+    {
+      "id": "human_approval",
+      "name": "Human Approval Queue",
+      "type": "control.wait_for_human",
+      "typeVersion": 1,
+      "position": [840, 460],
+      "parameters": {
+        "channel": "chat",
+        "payload_schema_ref": "schemas/approval.request.schema.json",
+        "options": ["approve", "revise", "downgrade", "abort"],
+        "sla_minutes": 120,
+        "on_timeout": "park_run",
+        "auto_approve_allowed": false
+      }
+    },
+    {
+      "id": "rollback",
+      "name": "Rollback To Last Good Deployment",
+      "type": "control.compensate",
+      "typeVersion": 1,
+      "position": [1400, 460],
+      "parameters": {
+        "target": "it_deployment",
+        "action": "alias_production_to_last_good_deployment",
+        "verify_after": ["http_smoke"],
+        "notify": true
+      }
+    },
+    {
+      "id": "done",
+      "name": "Publish Run Report",
+      "type": "output.report",
+      "typeVersion": 1,
+      "position": [1680, 40],
+      "parameters": {
+        "output_schema_ref": "schemas/run.report.schema.json",
+        "destinations": ["chat", "artifact_store", "repo:docs/runs/"]
+      }
+    }
+  ],
+  "gates": [
+    {
+      "id": "G1",
+      "after": "idea_generator",
+      "threshold": 0.8,
+      "deterministic": ["schema_valid", "min_personas:2", "min_usps:3", "persona_ref_integrity", "usp_dedupe:0.85", "banned_phrase_check"],
+      "rubric": { "novelty": 0.3, "market_plausibility": 0.3, "specificity": 0.4 }
+    },
+    {
+      "id": "G2",
+      "after": "product_manager",
+      "threshold": 0.85,
+      "deterministic": ["schema_valid", "gherkin_criteria_present", "out_of_scope_non_empty", "trace_integrity", "phase_dependency_acyclic", "max_story_points:8"],
+      "rubric": { "completeness": 0.3, "internal_consistency": 0.3, "scope_discipline": 0.2, "testability": 0.2 }
+    },
+    {
+      "id": "G3",
+      "after": "uiux_designer",
+      "threshold": 0.85,
+      "deterministic": ["token_json_valid", "alias_resolution", "no_raw_hex_outside_primitives", "contrast_aa_all_text_pairs", "sitemap_component_coverage", "focus_visible_defined", "heading_outline_valid", "touch_target_min:44"],
+      "rubric": { "hierarchy_clarity": 0.4, "token_coherence": 0.3, "layout_semantics": 0.3 }
+    },
+    {
+      "id": "G4",
+      "after": "software_engineer",
+      "threshold": 0.85,
+      "deterministic": ["install_exit_0", "lint_exit_0", "typecheck_exit_0", "test_exit_0", "build_exit_0", "secret_scan_clean", "bundle_within_budget", "story_test_coverage", "no_literal_style_values"],
+      "rubric": { "modularity": 0.3, "readability": 0.2, "spec_coverage": 0.3, "a11y_markup": 0.2 }
+    },
+    {
+      "id": "G5",
+      "after": "it_deployment",
+      "threshold": null,
+      "deterministic": ["routes_expected_status", "tls_valid", "lighthouse_perf:0.85", "lighthouse_a11y:0.95", "zero_console_errors", "zero_broken_links", "secret_scan_clean", "rollback_target_recorded", "required_env_present"],
+      "rubric": null
+    }
+  ],
+  "connections": {
+    "trigger": { "main": [[{ "node": "lead_manager", "type": "main", "index": 0 }]] },
+    "lead_manager": {
+      "main": [
+        [{ "node": "idea_generator", "type": "main", "index": 0 }],
+        [{ "node": "product_manager", "type": "main", "index": 0 }],
+        [{ "node": "uiux_designer", "type": "main", "index": 0 }],
+        [{ "node": "software_engineer", "type": "main", "index": 0 }],
+        [{ "node": "it_deployment", "type": "main", "index": 0 }],
+        [{ "node": "human_approval", "type": "main", "index": 0 }],
+        [{ "node": "done", "type": "main", "index": 0 }]
+      ]
+    },
+    "idea_generator": { "main": [[{ "node": "lead_manager", "type": "main", "index": 0 }]] },
+    "product_manager": { "main": [[{ "node": "lead_manager", "type": "main", "index": 0 }]] },
+    "uiux_designer": { "main": [[{ "node": "lead_manager", "type": "main", "index": 0 }]] },
+    "software_engineer": { "main": [[{ "node": "lead_manager", "type": "main", "index": 0 }]] },
+    "it_deployment": {
+      "main": [[{ "node": "lead_manager", "type": "main", "index": 0 }]],
+      "error": [[{ "node": "rollback", "type": "main", "index": 0 }]]
+    },
+    "rollback": { "main": [[{ "node": "human_approval", "type": "main", "index": 0 }]] },
+    "human_approval": { "main": [[{ "node": "lead_manager", "type": "main", "index": 0 }]] }
+  },
+  "routing_rules": [
+    { "id": "r1", "when": { "and": [{ "==": [{ "var": "gate.id" }, "G1"] }, { ">=": [{ "var": "quality.score" }, 0.8] }] }, "then": { "route": "product_manager" } },
+    { "id": "r2", "when": { "and": [{ "==": [{ "var": "gate.id" }, "G1"] }, { "<": [{ "var": "quality.score" }, 0.8] }, { "<": [{ "var": "trace.attempt" }, 2] }] }, "then": { "route": "idea_generator", "mode": "rework_with_critique" } },
+    { "id": "r3", "when": { "and": [{ "==": [{ "var": "gate.id" }, "G2"] }, { ">=": [{ "var": "quality.score" }, 0.85] }] }, "then": { "route": "uiux_designer" } },
+    { "id": "r4", "when": { "and": [{ "==": [{ "var": "gate.id" }, "G2"] }, { "==": [{ "var": "payload.scope.out_of_scope.length" }, 0] }] }, "then": { "route": "human_approval", "reason": "unbounded_scope" } },
+    { "id": "r5", "when": { "and": [{ "==": [{ "var": "gate.id" }, "G3"] }, { "==": [{ "var": "checks.contrast_aa_all_text_pairs" }, false] }] }, "then": { "route": "uiux_designer", "mode": "auto_fix_palette" } },
+    { "id": "r6", "when": { "and": [{ "==": [{ "var": "gate.id" }, "G3"] }, { ">=": [{ "var": "quality.score" }, 0.85] }] }, "then": { "route": "software_engineer" } },
+    { "id": "r7", "when": { "and": [{ "==": [{ "var": "gate.id" }, "G4"] }, { "==": [{ "var": "checks.build_exit_0" }, false] }, { "<": [{ "var": "trace.attempt" }, 3] }] }, "then": { "route": "software_engineer", "mode": "inject_build_log_tail" } },
+    { "id": "r8", "when": { "and": [{ "==": [{ "var": "gate.id" }, "G4"] }, { "==": [{ "var": "checks.build_exit_0" }, false] }, { ">=": [{ "var": "trace.attempt" }, 3] }] }, "then": { "route": "human_approval", "reason": "build_unrecoverable" } },
+    { "id": "r9", "when": { "and": [{ "==": [{ "var": "gate.id" }, "G4"] }, { "==": [{ "var": "gate.passed" }, true] }] }, "then": { "route": "it_deployment" } },
+    { "id": "r10", "when": { "and": [{ "==": [{ "var": "gate.id" }, "G5"] }, { "==": [{ "var": "gate.passed" }, true] }] }, "then": { "route": "done" } },
+    { "id": "r11", "when": { "in": [{ "var": "errors.0.class" }, ["E6xx"]] }, "then": { "route": "rollback" } },
+    { "id": "r12", "when": { "in": [{ "var": "errors.0.class" }, ["E4xx"]] }, "then": { "route": "human_approval", "reason": "secrets_or_policy_never_auto_remediated" } },
+    { "id": "r13", "when": { ">": [{ "var": "budget.usd_spent" }, { "var": "budget.usd_cap" }] }, "then": { "route": "human_approval", "reason": "budget_cap_breached" } },
+    { "id": "r14", "when": { "==": [{ "var": "human.decision" }, "abort"] }, "then": { "route": "done", "status": "cancelled" } }
+  ],
+  "error_policy": {
+    "classes": {
+      "E1xx": { "meaning": "contract violation", "remedy": "re_prompt_with_validator_errors", "max_attempts": 2 },
+      "E2xx": { "meaning": "quality gate failure", "remedy": "rework_with_critique", "max_attempts": 2 },
+      "E3xx": { "meaning": "tool or integration error", "remedy": "backoff_and_retry", "max_attempts": 3 },
+      "E4xx": { "meaning": "auth, secrets or policy", "remedy": "none", "max_attempts": 0, "escalate": "immediate" },
+      "E5xx": { "meaning": "build or compile failure", "remedy": "inject_logs_and_repair", "max_attempts": 3 },
+      "E6xx": { "meaning": "deploy or infra failure", "remedy": "retry_then_rollback", "max_attempts": 2 },
+      "E7xx": { "meaning": "budget or rate limit", "remedy": "queue_or_halt", "max_attempts": 1 },
+      "E8xx": { "meaning": "human timeout", "remedy": "park_run", "max_attempts": 0 }
+    },
+    "backoff": { "formula": "min(60s, 2^attempt * 1s) * (1 + rand(0, 0.3))" },
+    "handler_node": "it_deployment"
+  },
+  "artifacts": {
+    "root": "runs/{run_id}/",
+    "expected": [
+      "idea/brief.json",
+      "pm/product.spec.json",
+      "pm/feature-specs.md",
+      "design/tokens.json",
+      "design/system.json",
+      "code/bundle.json",
+      "build/attempt-{n}.log",
+      "deploy/deployment.record.json",
+      "events.jsonl",
+      "run.report.json"
+    ]
+  }
+}
