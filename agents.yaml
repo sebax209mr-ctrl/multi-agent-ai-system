@@ -20,6 +20,7 @@ orchestrator:
   max_iterations: 10
 
 agents:
+  # --- intake: independent, can run in any order ---------------------------
   - name: schedule_reader
     type: schedule_reader
     role: Reads applicant availability and extracts structured schedule data
@@ -29,6 +30,53 @@ agents:
     options:
       path: data/applicants.csv
 
+  - name: resume_reader
+    type: resume_reader
+    role: Parses resumes into structured candidate records
+    model: gpt-4o-mini
+    tools: [file_reader]
+    depends_on: []
+    options:
+      path: data/resumes
+
+  # --- validation and reasoning --------------------------------------------
+  - name: crn_checker
+    type: crn_checker
+    role: Validates the CRN on each candidate record
+    model: gpt-4o-mini
+    tools: []
+    depends_on: [resume_reader]
+    options:
+      source: resume_reader
+      # Placeholder format - confirm the real one before relying on this.
+      pattern: "^CRN-[0-9]{6}$"
+
+  - name: suggestion_agent
+    type: suggestion_agent
+    role: Recommends candidates using CRN verdicts and availability
+    model: gpt-4o-mini
+    tools: []
+    depends_on: [crn_checker, schedule_reader]
+    options:
+      crn_source: crn_checker
+      schedule_source: schedule_reader
+      # Set to true to have the model write the rationale. Needs OPENAI_API_KEY.
+      explain: false
+
+  # --- rendering: expensive, opt in explicitly ------------------------------
+  - name: visualizer
+    type: visualizer
+    role: Renders the suggested schedule as a viewable artifact
+    model: gpt-4o-mini
+    tools: []
+    depends_on: [suggestion_agent]
+    enabled: false
+    options:
+      source: suggestion_agent
+      output_dir: runs
+      write: false
+
+  # --- generic placeholders left from the starter template ------------------
   - name: researcher
     role: Gathers information and context needed to complete a task
     model: gpt-4o-mini
@@ -45,7 +93,7 @@ agents:
     role: Reviews outputs from other agents for quality and correctness
     model: gpt-4o-mini
     tools: [code_interpreter]
-    depends_on: [coder, schedule_reader]
+    depends_on: [coder, suggestion_agent]
 
 communication:
   protocol: message_passing

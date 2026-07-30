@@ -12,12 +12,20 @@ one line here - or call register() at import time from your own module.
 from typing import Any, Dict, Type
 
 from agents.base_agent import BaseAgent
+from agents.crn_checker import CrnCheckerAgent
+from agents.resume_reader import ResumeReaderAgent
 from agents.schedule_reader import ScheduleReaderAgent
+from agents.suggestion_agent import SuggestionAgent
+from agents.visualizer import VisualizerAgent
 from agents.worker import WorkerAgent
 
 AGENT_TYPES: Dict[str, Type[BaseAgent]] = {
     "worker": WorkerAgent,
     "schedule_reader": ScheduleReaderAgent,
+    "resume_reader": ResumeReaderAgent,
+    "crn_checker": CrnCheckerAgent,
+    "suggestion_agent": SuggestionAgent,
+    "visualizer": VisualizerAgent,
 }
 
 
