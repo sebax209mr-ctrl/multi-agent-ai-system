@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Customers - PoolFlow</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="/css/site.css">
+  <script src="/js/api.js" defer></script>
+  <script src="/js/nav.js" defer></script>
+  <script src="/js/customers.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="/dashboard">Pool<span>Flow</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/schedule">Schedule</a>
+        <a href="/customers">Customers</a>
+        <a href="/conversations">Conversations</a>
+      </nav>
+      <div class="whoami">
+        <span id="whoami-business"></span>
+        <span id="whoami-name" class="faint"></span>
+        <button id="signout" class="small quiet" type="button">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="wrap stack">
+      <div class="page-head">
+        <h1>Customers and leads</h1>
+        <p class="muted">
+          One list. The status is the funnel - change it right in the table.
+        </p>
+      </div>
+
+      <div id="page-notice" class="hidden"></div>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Add someone</h2>
+        </div>
+        <div id="create-notice" class="hidden"></div>
+
+        <form id="customer-create" novalidate>
+          <div class="grid-2">
+            <div class="field">
+              <label for="name">Name</label>
+              <input id="name" name="name" type="text" autocomplete="name" maxlength="120">
+            </div>
+            <div class="field">
+              <label for="phone">Mobile number</label>
+              <input id="phone" name="phone" type="tel" inputmode="tel"
+                     autocomplete="tel" placeholder="(555) 010-2030" required>
+            </div>
+            <div class="field">
+              <label for="address">Service address</label>
+              <input id="address" name="address" type="text" maxlength="240">
+            </div>
+            <div class="field">
+              <label for="email">Email (optional)</label>
+              <input id="email" name="email" type="email" autocomplete="email">
+            </div>
+            <div class="field">
+              <label for="status">Status</label>
+              <select id="status" name="status">
+                <option value="lead">lead</option>
+                <option value="active">active</option>
+                <option value="paused">paused</option>
+                <option value="lost">lost</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="plan">Plan</label>
+              <select id="plan" name="plan">
+                <option value="">no plan yet</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes" maxlength="2000"
+                      placeholder="Gate code, dog, filter type, anything the tech needs."></textarea>
+          </div>
+          <button id="customer-create-submit" type="submit">Save</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>The list</h2>
+          <span class="faint" id="customer-count"></span>
+        </div>
+
+        <form id="customer-filter" class="row">
+          <div class="grow">
+            <label for="q">Search</label>
+            <input id="q" name="q" type="search" placeholder="Name, number or address">
+          </div>
+          <div class="grow">
+            <label for="filter-status">Status</label>
+            <select id="filter-status" name="status">
+              <option value="">all statuses</option>
+              <option value="lead">lead</option>
+              <option value="active">active</option>
+              <option value="paused">paused</option>
+              <option value="lost">lost</option>
+            </select>
+          </div>
+          <div>
+            <button type="submit">Filter</button>
+          </div>
+        </form>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Who</th>
+                <th>Number</th>
+                <th>Status</th>
+                <th>Plan</th>
+                <th>Came from</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="customer-rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
+
