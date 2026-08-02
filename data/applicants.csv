@@ -1,3 +1,3 @@
-name,available_day
-Alice,Wednesday
-Bob,Sunday
+applicant_id,name,available_day
+APP-001,Alice,Wednesday
+APP-002,Bob,Sunday

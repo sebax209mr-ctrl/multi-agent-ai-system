@@ -216,3 +216,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- project specific -------------------------------------------------------
+
+# Real applicant data is personal information and must never be committed.
+# Only the synthetic sample-*.md fixtures used by the tests are tracked.
+data/resumes/*
+!data/resumes/sample-*.md
+
+# Run artifacts produced by the visualizer agent
+runs/
